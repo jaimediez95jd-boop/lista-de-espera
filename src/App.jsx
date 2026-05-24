@@ -99,7 +99,6 @@ const diasEspera = (fechaSolicitud) => {
   return diff;
 };
 
-// ── AI extraction ─────────────────────────────────────────────────────────────
 async function extractFromImage(base64Data, mediaType) {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -133,7 +132,6 @@ Formato exacto: {"nombre":"","apellidos":"","nhc":"","edad":""}`
   return JSON.parse(raw);
 }
 
-// ── CSV export ────────────────────────────────────────────────────────────────
 function exportCSV(pacientes) {
   const headers = ["Nombre", "Apellidos", "NHC", "Edad", "Cirugía", "F. Solicitud", "F. Cirugía", "Estado", "Días espera", "Observaciones"];
   const rows = pacientes.map(p => [
@@ -152,8 +150,6 @@ function exportCSV(pacientes) {
   a.click(); URL.revokeObjectURL(url);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function App() {
   const [pacientes, setPacientes] = useState([]);
   const [vista, setVista] = useState("lista");
@@ -171,7 +167,7 @@ export default function App() {
   const scanRef = useRef();
 
   useEffect(() => {
-    const q = query(collection(db, "publica-contreras"), orderBy("fechaCreacion", "desc"));
+    const q = query(collection(db, "publica-diez-saralegui"), orderBy("fechaCreacion", "desc"));
     const unsub = onSnapshot(q, snap => {
       setPacientes(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
@@ -207,10 +203,10 @@ export default function App() {
       const { id, ...datos } = form;
       const payload = { ...datos, updatedAt: new Date().toISOString() };
       if (vista === "nuevo") {
-        await addDoc(collection(db, "publica-contreras"), payload);
+        await addDoc(collection(db, "publica-diez-saralegui"), payload);
         showToast("Paciente añadido a lista de espera ✓");
       } else {
-        await updateDoc(doc(db, "publica-contreras", form.id), payload);
+        await updateDoc(doc(db, "publica-diez-saralegui", form.id), payload);
         showToast("Paciente actualizado ✓");
       }
       setVista("lista");
@@ -219,19 +215,18 @@ export default function App() {
   }
 
   async function handleDelete(id) {
-    try { await deleteDoc(doc(db, "publica-contreras", id)); showToast("Paciente eliminado"); }
+    try { await deleteDoc(doc(db, "publica-diez-saralegui", id)); showToast("Paciente eliminado"); }
     catch { showToast("Error al eliminar", "error"); }
     setConfirmDelete(null); setVista("lista");
   }
 
   async function cambiarEstado(p, estado) {
     try {
-      await updateDoc(doc(db, "publica-contreras", p.id), { estado, updatedAt: new Date().toISOString() });
+      await updateDoc(doc(db, "publica-diez-saralegui", p.id), { estado, updatedAt: new Date().toISOString() });
       showToast(`Estado → ${estado} ✓`);
     } catch { showToast("Error al actualizar", "error"); }
   }
 
-  // ── SCAN ──────────────────────────────────────────────────────────────────
   function handleScanClick() { scanRef.current?.click(); }
 
   async function handleScanFile(e) {
@@ -308,7 +303,7 @@ export default function App() {
           <span style={{ fontSize: 20 }}>🏥</span>
           <div>
             <div style={S.brandH}>Lista de Espera · Pública</div>
-            <div style={S.brandSub}>Dr. Contreras · Pie y Tobillo</div>
+            <div style={S.brandSub}>Dr. Díez Saralegui · Pie y Tobillo</div>
           </div>
         </div>
         <div style={S.headerRight}>
@@ -318,7 +313,6 @@ export default function App() {
 
       <main style={S.main}>
 
-        {/* ═══ LISTA ═══ */}
         {vista === "lista" && (<>
           <div style={S.statsRow}>
             {[
@@ -361,22 +355,14 @@ export default function App() {
                     const diasColor = dias > 365 ? "#ef4444" : dias > 180 ? "#f59e0b" : "#10b981";
                     return (
                       <tr key={p.id} style={S.tr}>
-                        <td style={S.td}>
-                          <div style={{ fontWeight: 700, color: "#1e293b" }}>{p.nombre} {p.apellidos}</div>
-                        </td>
+                        <td style={S.td}><div style={{ fontWeight: 700, color: "#1e293b" }}>{p.nombre} {p.apellidos}</div></td>
                         <td style={S.td}><span style={S.mono}>{p.nhc || "—"}</span></td>
                         <td style={S.td}>{p.edad ? `${p.edad}a` : "—"}</td>
                         <td style={S.td}><span style={S.cirugiaBadge}>{p.cirugia}</span></td>
                         <td style={S.td}>{formatDate(p.fechaSolicitud)}</td>
+                        <td style={S.td}>{dias !== null ? <span style={{ fontWeight: 700, color: diasColor }}>{dias}d</span> : "—"}</td>
                         <td style={S.td}>
-                          {dias !== null ? <span style={{ fontWeight: 700, color: diasColor }}>{dias}d</span> : "—"}
-                        </td>
-                        <td style={S.td}>
-                          <select
-                            style={{ ...S.estadoSelect, ...estadoColor(p.estado) }}
-                            value={p.estado}
-                            onChange={e => cambiarEstado(p, e.target.value)}
-                          >
+                          <select style={{ ...S.estadoSelect, ...estadoColor(p.estado) }} value={p.estado} onChange={e => cambiarEstado(p, e.target.value)}>
                             {ESTADOS.map(e => <option key={e}>{e}</option>)}
                           </select>
                         </td>
@@ -397,7 +383,6 @@ export default function App() {
           )}
         </>)}
 
-        {/* ═══ DETALLE ═══ */}
         {vista === "detalle" && selected && (
           <div style={S.formCard}>
             <div style={S.formHeader}>
@@ -423,7 +408,6 @@ export default function App() {
           </div>
         )}
 
-        {/* ═══ FORMULARIO ═══ */}
         {isForm && (
           <div style={S.formCard}>
             <div style={S.formHeader}>
@@ -431,16 +415,12 @@ export default function App() {
               <h2 style={S.formTitle}>{vista === "nuevo" ? "Añadir a lista de espera" : "Editar paciente"}</h2>
             </div>
 
-            {/* SCAN */}
             <div style={S.scanSection}>
               <div style={{ flex: 1 }}>
                 <div style={S.scanTitle}>📸 Escanear pantalla del ordenador</div>
                 <div style={S.scanDesc}>Haz una captura de pantalla del HIS o sube una foto y la IA extraerá los datos del paciente automáticamente.</div>
                 <input ref={scanRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: "none" }} onChange={handleScanFile} />
-                <button
-                  style={{ ...S.btnScan, opacity: scanState === "loading" ? 0.65 : 1, cursor: scanState === "loading" ? "wait" : "pointer" }}
-                  onClick={handleScanClick} disabled={scanState === "loading"}
-                >
+                <button style={{ ...S.btnScan, opacity: scanState === "loading" ? 0.65 : 1, cursor: scanState === "loading" ? "wait" : "pointer" }} onClick={handleScanClick} disabled={scanState === "loading"}>
                   {scanState === "loading" ? "⏳ Analizando..." : scanState === "done" ? "✓ Extraído — subir otra" : "📸 Subir captura de pantalla"}
                 </button>
                 {scanState === "error" && <div style={S.scanMsg}>{scanError}</div>}
@@ -481,12 +461,7 @@ export default function App() {
             </div>
 
             <SectionTitle>Observaciones</SectionTitle>
-            <textarea
-              style={{ ...S.input, minHeight: 100, resize: "vertical" }}
-              value={form.observaciones}
-              onChange={e => setForm({ ...form, observaciones: e.target.value })}
-              placeholder="Diagnóstico, indicación quirúrgica, alergias, comorbilidades, preferencias del paciente..."
-            />
+            <textarea style={{ ...S.input, minHeight: 100, resize: "vertical" }} value={form.observaciones} onChange={e => setForm({ ...form, observaciones: e.target.value })} placeholder="Diagnóstico, indicación quirúrgica, alergias, comorbilidades, preferencias del paciente..." />
 
             <div style={S.formActions}>
               <button style={S.btnPrimary} onClick={handleGuardar}>{saving ? "Guardando..." : vista === "nuevo" ? "Añadir a lista" : "Actualizar"}</button>
@@ -517,7 +492,6 @@ function FormField({ label, value, onChange, type = "text", placeholder }) {
     </div>
   );
 }
-
 function estadoColor(e) {
   return ({
     "Lista de espera": { background: "#fef3c7", color: "#92400e" },
