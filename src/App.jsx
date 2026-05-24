@@ -150,7 +150,13 @@ function exportCSV(pacientes) {
   a.click(); URL.revokeObjectURL(url);
 }
 
+const ACCESS_PASSWORD = "palaciodelpie";
+
 export default function App() {
+  const [autenticado, setAutenticado] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [pacientes, setPacientes] = useState([]);
   const [vista, setVista] = useState("lista");
   const [selected, setSelected] = useState(null);
@@ -271,6 +277,40 @@ export default function App() {
     programados: pacientes.filter(p => p.estado === "Programado").length,
     operados: pacientes.filter(p => p.estado === "Operado" || p.estado === "Alta").length,
   };
+
+  if (!autenticado) return (
+    <div style={S.loadingWrap}>
+      <div style={{ background: "#fff", borderRadius: 20, padding: "44px 40px", boxShadow: "0 20px 60px rgba(99,102,241,.15)", textAlign: "center", maxWidth: 400, width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, justifyContent: "center", marginBottom: 28 }}>
+          <span style={{ fontSize: 44 }}>🏥</span>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: "#1e293b", textAlign: "left" }}>Lista de Espera</div>
+            <div style={{ fontSize: 12, color: "#6366f1", fontWeight: 600, textAlign: "left" }}>Dr. Díez Saralegui · Pie y Tobillo</div>
+          </div>
+        </div>
+        <p style={{ fontWeight: 600, color: "#475569", marginBottom: 16 }}>Introduce la contraseña</p>
+        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <input
+            style={{ flex: 1, padding: "10px 14px", border: `1.5px solid ${passwordError ? "#ef4444" : "#e2e8f0"}`, borderRadius: 9, fontSize: 15, outline: "none", letterSpacing: "0.1em" }}
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={e => { setPassword(e.target.value); setPasswordError(false); }}
+            onKeyDown={e => { if (e.key === "Enter") { if (password === ACCESS_PASSWORD) { setAutenticado(true); } else { setPasswordError(true); setPassword(""); } } }}
+            placeholder="Contraseña..."
+            autoFocus
+          />
+          <button style={{ padding: "8px 12px", background: "#f8fafc", border: "1.5px solid #e2e8f0", borderRadius: 9, cursor: "pointer", fontSize: 16 }} onClick={() => setShowPassword(v => !v)}>
+            {showPassword ? "🙈" : "👁"}
+          </button>
+        </div>
+        {passwordError && <div style={{ color: "#ef4444", fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Contraseña incorrecta</div>}
+        <button
+          style={{ width: "100%", padding: 11, background: "#6366f1", color: "#fff", border: "none", borderRadius: 10, fontWeight: 700, fontSize: 15, cursor: "pointer", marginTop: 4 }}
+          onClick={() => { if (password === ACCESS_PASSWORD) { setAutenticado(true); } else { setPasswordError(true); setPassword(""); } }}
+        >Acceder</button>
+      </div>
+    </div>
+  );
 
   if (loading) return (
     <div style={S.loadingWrap}>
